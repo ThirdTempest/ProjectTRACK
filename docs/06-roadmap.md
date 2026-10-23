@@ -19,34 +19,35 @@ timeline
 
 ## 2. Active Development Priorities
 
-### 2.1 High-Priority Milestones
+### 2.1 Implemented & Stabilized Milestones
 
 #### 2x Zoom Barangay Boundary and Density Layer
-* **Objective**: Enable dynamic vector layer switching to display all constituent barangays (1,066+ administrative subdivisions across Cebu) when zooming beyond level 12.
-* **Technical Constraints**: Optimize GeoJSON simplification tolerances and quadtree spatial indexes to ensure 60fps panning performance on low-spec client hardware.
-* **Status**: In Progress (`Website/src/features/map`).
+* **Objective**: Enable dynamic vector layer switching to display constituent barangays across Cebu when zooming beyond level 12.
+* **Technical Implementation**: Optimized GeoJSON simplification and dynamic Overpass caching in `Website/src/features/map` and pre-bundled `cebuBarangays.json` in mobile client.
+* **Status**: Completed.
 
 #### GraphRAG Grounding and Secure Endpoints
-* **Objective**: Finalize parametric Cypher query templates and rate limiting on `/api/chat` and `/api/chat/stream`.
-* **Technical Constraints**: Implement Redis-backed token bucket rate limits to protect free-tier LLM inference endpoints from denial-of-service attempts.
-* **Status**: Core engine operational; rate-limiting middleware scheduled.
+* **Objective**: Parametric Cypher query extraction, 5-layer domain guardrails, and SSE token streaming on `/api/chat` and `/api/chat/stream`.
+* **Technical Implementation**: High-speed intent gating (<0.1ms), prompt-injection normalization, grounded WHAT/WHERE/WHO/WHEN/WHY/HOW answer framing, and spatial map synchronization.
+* **Status**: Completed.
+
+#### Citizen Authentication (OAuth 2.0 / GoTrue)
+* **Objective**: Allow community monitors and local watchdogs to establish verified accounts via Google OAuth and email/password.
+* **Technical Implementation**: Backend-managed GoTrue auth under `/api/auth` with HTTP-only session cookies on web and native token store via `expo-secure-store` on mobile.
+* **Status**: Completed.
+
+#### Field Anomaly Reporting & Verification Badging
+* **Objective**: Authenticated field reporting module for citizens to report stalled, abandoned, or defective projects with photo evidence.
+* **Technical Implementation**: Server-side ≤150m geofence verification, ELA and pHash forensics, 3-per-day rate limits, reputation scoring, and badging across web and mobile.
+* **Status**: Completed.
 
 ---
 
-### 2.2 Medium-Priority Milestones
-
-#### Citizen Authentication (OAuth 2.0 / OIDC)
-* **Objective**: Allow community monitors and local watchdogs to establish verified accounts via Google and Facebook OAuth.
-* **Scope**: JWT-based session tokens, role-based access control (`Citizen`, `Auditor`, `Data Journalist`, `Administrator`).
-
-#### People's Initiative and Community Feedback Engine
-* **Objective**: Provide an authenticated participatory module where residents can:
-  * Upvote or express community need for proposed civil works (e.g. road widening, drainage).
-  * Report stalled, abandoned, or defective infrastructure directly linked to an official DPWH project ID.
-  * Upload geotagged verification photos.
+### 2.2 Next Phase Priorities
 
 #### Unified District and Municipal Pin Interaction
 * **Objective**: Standardize click interactions across administrative levels. Clicking a municipal boundary or district engineering office (DEO) triggers a slide-out panel detailing all concurrent projects, total allocated budget, and contractor distribution.
+* **Status**: Scheduled.
 
 ---
 

@@ -21,7 +21,7 @@ All data is live (no mock data). The UI renders explicit loading, empty, and err
 
 The latest stable APK is attached to the GitHub Release:
 
-**[Download ProjectTRACK.apk from GitHub Releases](https://github.com/ThirdTempest/ProjectTRACK/releases/latest)**
+**[Download ProjectTRACK.apk from GitHub Releases](https://github.com/kaids77/ProjectTRACK/releases/latest)**
 
 ### Installation
 
@@ -157,7 +157,7 @@ eas project:init   # links the project and writes projectId to app.json
 eas build --platform android --profile preview
 ```
 
-The build targets `https://projecttrack-28nb.onrender.com/api` (set in `eas.json`). When the build finishes, EAS prints a download URL. Attach the APK to the GitHub Release so the website's "Get an App" button can download it directly.
+The build targets the production backend API (configured in `eas.json`). When the build finishes, EAS prints a download URL. Attach the APK to the GitHub Release so the website's "Get an App" button can download it directly.
 
 **Latest build:** EAS build `484fb092-bcff-46e2-9fd7-5487d948bfca`, version 1.0.0 (versionCode 9).
 

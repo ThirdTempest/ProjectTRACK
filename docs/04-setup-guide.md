@@ -56,10 +56,10 @@ Choose the workflow best suited to your development environment:
    NEO4J_USERNAME=neo4j
    NEO4J_PASSWORD=your_password
 
-   # LLM Configuration
-   LLM_BASE_URL=https://router.huggingface.co/v1
-   LLM_MODEL=XiaomiMiMo/MiMo-V2-Flash
-   LLM_API_KEY=hf_your_token
+   # LLM Configuration (Default: Groq LPU)
+   LLM_BASE_URL=https://api.groq.com/openai/v1
+   LLM_MODEL=qwen/qwen3.8-27b
+   GROQ_API_KEY=gsk_your_groq_api_key
    LLM_MAX_TOKENS=2048
    ```
 
@@ -100,7 +100,7 @@ The dashboard will be available at `http://localhost:5173`.
 
 1. **Navigate to Mobile Directory**:
    ```bash
-   cd ../Mobile
+   cd ../mobile
    ```
 
 2. **Install Mobile Dependencies**:
@@ -112,7 +112,7 @@ The dashboard will be available at `http://localhost:5173`.
    ```bash
    cp .env.example .env
    ```
-   Set `API_BASE_URL` to point to your backend service (e.g. `http://10.0.2.2:8000/api` for Android Emulator or your LAN IP for physical testing).
+   Set `EXPO_PUBLIC_API_URL` to point to your backend service (e.g. `http://10.0.2.2:8000/api` for Android Emulator or your LAN IP for physical testing).
 
 4. **Launch Expo Development Server**:
    ```bash

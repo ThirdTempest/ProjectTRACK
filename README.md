@@ -3,6 +3,8 @@
 > **Civic Intelligence and Transparency Engine for DPWH Infrastructure Projects Across Cebu**  
 > *Transforming fragmented public civil works data into verifiable, geospatial, and graph-powered community intelligence.*
 
+**Live Web Application:** [https://projecttrack.pages.dev/](https://projecttrack.pages.dev/)
+
 [![CI](https://github.com/kaids77/ProjectTRACK/actions/workflows/ci.yml/badge.svg?branch=development)](https://github.com/kaids77/ProjectTRACK/actions/workflows/ci.yml)
 [![Security Audit](https://github.com/kaids77/ProjectTRACK/actions/workflows/security-audit.yml/badge.svg)](https://github.com/kaids77/ProjectTRACK/actions/workflows/security-audit.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -85,6 +87,15 @@ flowchart TD
 ---
 
 ## Quick Start Guide
+
+### Live Application (Instant Evaluation)
+
+ProjectTrack is deployed and ready for online evaluation without local installation:
+
+* **Production Web Portal**: [https://projecttrack.pages.dev/](https://projecttrack.pages.dev/)
+* **Android Field App (APK)**: Direct download available via the web portal's **"Get an App"** button or from [GitHub Releases](https://github.com/kaids77/ProjectTRACK/releases/latest)
+
+For local setup and source code evaluation, follow the instructions below:
 
 ### 1. Prerequisites
 * Python 3.10 or higher

@@ -101,9 +101,9 @@ However, on physical Android phones, **`10.0.2.2` and `localhost` do not work** 
 ### Setting Up Production Cloud Testing:
 Set `EXPO_PUBLIC_API_URL` to your live HTTPS production endpoint. For EAS
 cloud builds this is wired in `eas.json` (NOT `mobile/.env`, which only applies
-to local `expo start`). The deployed backend is:
+to local `expo start`). The deployed backend URL format is:
 ```env
-EXPO_PUBLIC_API_URL=https://projecttrack-28nb.onrender.com/api
+EXPO_PUBLIC_API_URL=https://<your-backend-domain>/api
 ```
 
 ---
@@ -116,8 +116,8 @@ The repo already ships the code/config below; the **dashboard/deploy items are
 the ones you must set yourself**.
 
 ### Already configured in the repo
-- **Backend URL** — `eas.json` `preview` (APK) and `production` profiles set
-  `EXPO_PUBLIC_API_URL=https://projecttrack-28nb.onrender.com/api`.
+- **Backend URL** — `eas.json` `preview` (APK) and `production` profiles configure
+  `EXPO_PUBLIC_API_URL`.
 - **HTTPS only** — `app.json` sets `android.usesCleartextTraffic: false`
   (the APK talks to the backend over HTTPS; no cleartext needed).
 - **OAuth deep link** — `app.json` registers an Android intent filter for
@@ -136,7 +136,7 @@ the ones you must set yourself**.
    exp://**
    ```
    (`projecttrack://**` is for the APK; `exp://**` is for Expo Go dev.)
-   Leave the **Site URL** as the deployed website — do not change it. Without
+   Leave the **Site URL** as your deployed website — do not change it. Without
    the redirect entry Supabase falls back to the Site URL and login bounces to
    the website instead of the app.
 2. **Google Cloud Console → OAuth client → Authorized redirect URIs** — must
@@ -144,12 +144,12 @@ the ones you must set yourself**.
    ```
    https://<your-supabase-ref>.supabase.co/auth/v1/callback
    ```
-3. **Render (deployed backend) environment** — for the web app's cross-site
+3. **Cloud Backend environment** — for the web app's cross-site
    cookie, set:
    ```
    AUTH_COOKIE_SECURE=true
    AUTH_COOKIE_SAMESITE=none
-   FRONTEND_URL=https://projecttrack.pages.dev
+   FRONTEND_URL=https://<your-frontend-domain>
    ```
    (The APK uses token headers, not the cookie, so these only affect the web
    client — but they must be set for the website to stay logged in.)
@@ -159,7 +159,7 @@ the ones you must set yourself**.
    Supabase (see §7) so `projecttrack://` deep links are trusted on signed APKs.
 
 ### Quick verification
-- Open `https://projecttrack-28nb.onrender.com/api/health` in a browser — it
+- Open `https://<your-backend-domain>/api/health` in a browser — it
   should return JSON (backend is up).
 - Install the APK, tap **Continue with Google**, authenticate → you should land
   **back in the app** (not the website), and the session should survive an app

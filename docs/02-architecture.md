@@ -210,7 +210,7 @@ Every project record in Neo4j includes latitude and longitude centroids determin
 
 $$d = 2r \arcsin\left(\sqrt{\sin^2\left(\frac{\Delta\phi}{2}\right) + \cos(\phi_1)\cos(\phi_2)\sin^2\left(\frac{\Delta\lambda}{2}\right)}\right)$$
 
-If $d > 100\text{ meters}$, the submission is blocked from real-time verification status until manual administrative clearance is granted.
+If $d > 150\text{ meters}$, the submission is blocked from real-time verified status (marked as unverified) until on-site proximity criteria are satisfied.
 
 ---
 

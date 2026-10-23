@@ -108,7 +108,7 @@ To prevent deceptive field submissions (such as photoshopping heavy machinery in
 * The absolute pixel variance matrix is evaluated against a statistical threshold; anomalies trigger an automated review flag.
 
 ### 3.2 Hardware-Enforced Geofencing (`expo-location`)
-* In the mobile auditor client, camera shutter actuation is programmatically disabled until the device achieves a high-accuracy GPS fix within the designated project geofence (standard radius: 100 meters of project coordinates).
+* In the mobile auditor client, camera shutter actuation is programmatically disabled until the device achieves a high-accuracy GPS fix within the designated project geofence (standard radius: 150 meters of project coordinates).
 * Mock GPS detection (`isMockProvider`) inspects Android developer options to detect virtual location spoofers.
 
 ### 3.3 EXIF Sensor and Timestamp Correlation

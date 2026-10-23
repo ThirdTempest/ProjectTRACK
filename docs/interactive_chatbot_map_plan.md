@@ -54,7 +54,7 @@ flowchart TD
 
 ### Backend Components
 
-#### [MODIFY] [`chat.py`](file:///C:/Users/User/VSCode_Programming/track/ProjectTRACK/backend/backend/models/chat.py)
+#### [MODIFY] [`backend/models/chat.py`](../backend/backend/models/chat.py)
 - Extend `ChatResponse` and context models to include `spatial` metadata:
   ```python
   class SpatialProjectPoint(BaseModel):
@@ -77,7 +77,7 @@ flowchart TD
       projects: List[SpatialProjectPoint] = []
   ```
 
-#### [MODIFY] [`chat.py`](file:///C:/Users/User/VSCode_Programming/track/ProjectTRACK/backend/backend/api/chat.py)
+#### [MODIFY] [`backend/api/chat.py`](../backend/backend/api/chat.py)
 - In `resolve_project_context`:
   - When a location (e.g. `Cordova`, `Mandaue`, `Bogo`) is recognized, extract its center coordinates and top geocoded project coordinates from Neo4j.
   - Return `spatial_context` including `total_count` (e.g. 195 total in Toledo) and initial top 50 project coordinates.
@@ -87,7 +87,7 @@ flowchart TD
 
 ### Frontend Components (Website)
 
-#### [NEW] [`ChatCopilot.jsx`](file:///C:/Users/User/VSCode_Programming/track/ProjectTRACK/Website/src/features/chat/ChatCopilot.jsx)
+#### [NEW] [`ChatCopilot.jsx`](../Website/src/features/chat/ChatCopilot.jsx)
 - **Floating Glassmorphic Card** positioned in the bottom-right corner over the map:
   - Header: `ProjectTrack Watchdog` with an `Online` status badge (no provider/vendor identifier surfaced), Minimize/Expand button, and Clear Chat.
   - Collapsed State: Sleek floating pill button: `Ask ProjectTrack Watchdog`.
@@ -100,7 +100,7 @@ flowchart TD
     - `Tell me about 24HH0043`
   - Input field with automatic focus, send button, and loading spinner.
 
-#### [NEW] [`MapContext.jsx`](file:///C:/Users/User/VSCode_Programming/track/ProjectTRACK/Website/src/features/map/MapContext.jsx)
+#### [NEW] [`MapContext.jsx`](../Website/src/features/map/MapContext.jsx)
 - State management provider coordinating Map and Chatbot:
   - `activeLocation`: Current municipality name (e.g. `"Cordova"`).
   - `cameraTarget`: `[lat, lng]` and `zoom` for smooth `map.flyTo()`.
@@ -111,7 +111,7 @@ flowchart TD
   - `selectedProject`: Detailed card popover for clicked dot.
   - `loadAllProjects(municipality)`: Function calling backend `GET /api/projects/map?municipality=...&limit=2000` to seamlessly switch from top 50 to all projects!
 
-#### [NEW] [`MapLegend.jsx`](file:///C:/Users/User/VSCode_Programming/track/ProjectTRACK/Website/src/features/map/MapLegend.jsx)
+#### [NEW] [`MapLegend.jsx`](../Website/src/features/map/MapLegend.jsx)
 - Glassmorphic legend overlay anchored in the bottom-left corner of the map:
   - **Completed**: `#10b981` (Solid emerald dot)
   - **Ongoing**: `#f59e0b` (Pulsing amber dot)
@@ -120,18 +120,18 @@ flowchart TD
     `Showing 50 of 195 projects in Toledo` + interactive toggle button: `[Show All 195]` / `[Show Top 50]`.
   - Clickable status items to filter visible dots on the map (e.g. click "Ongoing" to isolate active construction sites).
 
-#### [MODIFY] [`CebuMap.jsx`](file:///C:/Users/User/VSCode_Programming/track/ProjectTRACK/Website/src/features/map/CebuMap.jsx)
+#### [MODIFY] [`CebuMap.jsx`](../Website/src/features/map/CebuMap.jsx)
 - Connect to `MapContext`:
   - `MapCameraController`: Listens for `cameraTarget` changes and executes `map.flyTo(target, zoom, { duration: 1.5, easeLinearity: 0.25 })`.
   - Render status-colored project dots with rich interactive Tooltips and Popups on click.
   - Highlight active municipality polygon in GeoJSON with a glowing outline and soft fill tint.
   - Embed `MapLegend` overlay inside the map container.
 
-#### [MODIFY] [`HomePage.jsx`](file:///C:/Users/User/VSCode_Programming/track/ProjectTRACK/Website/src/pages/HomePage.jsx)
+#### [MODIFY] [`HomePage.jsx`](../Website/src/pages/HomePage.jsx)
 - Wrap page in `<MapProvider>`.
 - Embed `<ChatCopilot />` floating over `<CebuMap />`.
 
-#### [MODIFY] [`index.css`](file:///C:/Users/User/VSCode_Programming/track/ProjectTRACK/Website/src/index.css)
+#### [MODIFY] [`index.css`](../Website/src/index.css)
 - Add CSS animations and glowing tones for status dots:
   ```css
   .pin--emerald {
