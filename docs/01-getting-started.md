@@ -182,8 +182,8 @@ Expected output:
 ```text
   VITE v8.3.0  ready in 240 ms
 
-  ➜  Local:   http://localhost:5173/
-  ➜  Network: use --host to expose
+  ->  Local:   http://localhost:5173/
+  ->  Network: use --host to expose
 ```
 
 Open [http://localhost:5173](http://localhost:5173) in your browser.

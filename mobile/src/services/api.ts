@@ -210,7 +210,10 @@ class ApiService {
   }
 
   async fetchProjectsByLocation(location: string, limit = 15): Promise<ProjectDetail[]> {
-    const cleanLocation = sanitizeSearchQuery(location, 100);
+    let cleanLocation = sanitizeSearchQuery(location, 100);
+    if (/^(cebu province|all cebu|cebu)$/i.test(cleanLocation.trim())) {
+      cleanLocation = 'Cebu';
+    }
     if (!cleanLocation) return [];
     const safeLimit = Math.min(Math.max(1, limit), 100);
 

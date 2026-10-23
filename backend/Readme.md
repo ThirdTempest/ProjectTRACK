@@ -92,7 +92,7 @@ backend/
 
 ### Step 1: Navigate to Backend
 ```bash
-git clone https://github.com/ThirdTempest/ProjectTRACK.git
+git clone https://github.com/kaids77/ProjectTRACK.git
 cd ProjectTRACK/backend
 ```
 
@@ -156,6 +156,7 @@ SUPABASE_ANON_KEY="your_supabase_anon_public_key"       # required for /api/auth
 SUPABASE_REPORT_BUCKET="report-photos"                  # optional; defaults to report-photos
 
 # Web origin allowed to call the API with cookies + default OAuth redirect.
+# Local development: http://localhost:5173 | Production: https://your-domain.com
 FRONTEND_URL="http://localhost:5173"
 
 # --- Apify (Optional: only needed when running the scraper) ---
@@ -185,7 +186,7 @@ The installer will:
 
 ## How to Run (Master CLI)
 
-Everything is executed through [`main.py`](file:///C:/Users/User/VSCode_Programming/track/ProjectTRACK/backend/main.py):
+Everything is executed through [`cli.py`](cli.py):
 
 ### 1. Interactive Console (Default Mode)
 ```powershell
@@ -281,7 +282,7 @@ python -m uvicorn backend.app:create_app --factory --reload --port 8000
 
 * **Interactive Swagger UI**: `http://localhost:8000/docs`
 * **ReDoc Documentation**: `http://localhost:8000/redoc`
-* **Comprehensive API Guide**: See [`backend/backend/README.md`](file:///C:/Users/User/VSCode_Programming/track/ProjectTRACK/backend/backend/README.md)
+* **Comprehensive API Guide**: See [`backend/backend/README.md`](backend/README.md)
 
 ---
 
@@ -363,12 +364,12 @@ python -m unittest discover -s backend/tests -p "test_*.py"
 ```
 
 The test suite validates:
-* **API Endpoints & Guardrails** ([`test_api.py`](file:///C:/Users/User/VSCode_Programming/track/ProjectTRACK/backend/backend/tests/test_api.py)):
+* **API Endpoints & Guardrails** ([`test_api.py`](backend/tests/test_api.py)):
   * Pre-retrieval intent classifier (`<0.1ms`).
   * On-topic project lookups and analytics endpoints.
   * Server-Sent Events (SSE) streaming endpoint (`/api/chat/stream`).
   * Health checks for Neo4j and LLM.
-* **Fallback Resilience** ([`test_fallback.py`](file:///C:/Users/User/VSCode_Programming/track/ProjectTRACK/backend/backend/tests/test_fallback.py)):
+* **Fallback Resilience** ([`test_fallback.py`](backend/tests/test_fallback.py)):
   * Single-project and multi-project deterministic synthesis accuracy (`<5ms`).
   * Groq HTTP 429 rate limit automatic cascade to Instant Graph Synthesizer.
   * Streaming fallback to synthesized SSE chunks.
@@ -384,7 +385,7 @@ The test suite validates:
 | **Groq 429 rate limit reached** | System automatically falls back to local Ollama or Instant Graph Synthesis (<5ms). To enable local AI, run `python cli.py --setup-local-ai`. |
 | **Groq 401 invalid API key** | Verify `GROQ_API_KEY="gsk_..."` in `.env` from [console.groq.com/keys](https://console.groq.com/keys). |
 | **AuraDB pauses after inactivity** | Neo4j Aura Free instances pause after 3 days of no queries. Open the [Neo4j Aura Console](https://console.neo4j.io/) and click **Resume**. |
-| **Console character encoding error** | Run with UTF-8 flag: `python -X utf8 main.py`. |
+| **Console character encoding error** | Run with UTF-8 flag: `python -X utf8 cli.py`. |
 
 ---
 

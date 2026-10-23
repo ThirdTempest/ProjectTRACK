@@ -16,12 +16,13 @@ import {
   PanResponder,
   Animated,
 } from 'react-native';
-import Svg, { Path, G, Circle, Text as SvgText } from 'react-native-svg';
+import Svg, { Path, G, Circle, Rect, Text as SvgText } from 'react-native-svg';
 import {
   Pin,
   MunicipalityCollection,
   HierarchyFilterTier,
   LguMeta,
+  BoundingBox,
 } from '../../core/types';
 import {
   computeBoundingBox,
@@ -36,6 +37,7 @@ import {
 } from '../../core/geoUtils';
 import { haptics } from '../../services/haptics';
 import cebuDataRaw from '../../assets/cebuMunicipalities.json';
+import cebuBarangaysRaw from '../../assets/cebuBarangays.json';
 
 const cebuData = cebuDataRaw as unknown as MunicipalityCollection;
 
@@ -47,8 +49,16 @@ export interface CebuVectorMapProps {
   selectedPinId?: string | null;
   hierarchyTier?: HierarchyFilterTier;
   pins?: Pin[];
+  showAllPins?: boolean;
   onSelectMunicipality?: (name: string) => void;
   onSelectPin?: (pin: Pin) => void;
+  onSelectCluster?: (cluster: {
+    count: number;
+    pins: Pin[];
+    x: number;
+    y: number;
+    totalBudget?: number;
+  }) => void;
   width?: number;
   height?: number;
   testID?: string;
@@ -86,6 +96,116 @@ function isPointInRing(x: number, y: number, ring: { x: number; y: number }[]): 
   return inside;
 }
 
+
+interface BarangayDataItem {
+  name: string;
+  d: string;
+  centroid: { x: number; y: number };
+}
+
+function computeBarangaysForLgu(
+  lguName: string | null | undefined,
+  bounds: BoundingBox,
+  width: number,
+  height: number,
+): BarangayDataItem[] {
+  if (!lguName) return [];
+  const norm = normalizeLguName(lguName).toLowerCase();
+  let lguData: any = null;
+  for (const key of Object.keys(cebuBarangaysRaw)) {
+    if (normalizeLguName(key).toLowerCase() === norm || key.toLowerCase() === norm) {
+      lguData = (cebuBarangaysRaw as any)[key];
+      break;
+    }
+  }
+  if (!lguData?.features) return [];
+
+  return lguData.features.map((feature: any) => {
+    let d = '';
+    const name = feature.properties?.name || '';
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+
+    function ringToPath(ring: number[][]) {
+      let subPath = '';
+      for (let i = 0; i < ring.length; i++) {
+        const pt = geoToSvgCoordinates(ring[i][0], ring[i][1], bounds, width, height, 16);
+        if (pt.x < minX) minX = pt.x;
+        if (pt.x > maxX) maxX = pt.x;
+        if (pt.y < minY) minY = pt.y;
+        if (pt.y > maxY) maxY = pt.y;
+        subPath += (i === 0 ? 'M ' : ' L ') + `${pt.x.toFixed(1)} ${pt.y.toFixed(1)}`;
+      }
+      return subPath + ' Z ';
+    }
+
+    if (feature.geometry?.type === 'Polygon') {
+      for (const ring of feature.geometry.coordinates) {
+        d += ringToPath(ring);
+      }
+    } else if (feature.geometry?.type === 'MultiPolygon') {
+      for (const poly of feature.geometry.coordinates) {
+        for (const ring of poly) {
+          d += ringToPath(ring);
+        }
+      }
+    }
+
+    const centroid = {
+      x: (minX + maxX) / 2,
+      y: (minY + maxY) / 2,
+    };
+
+    return { name, d, centroid };
+  });
+}
+
+const BarangaysLayer = memo(function BarangaysLayer({
+  barangays,
+  scale,
+}: {
+  barangays: BarangayDataItem[];
+  scale: number;
+}) {
+  if (!barangays || barangays.length === 0) return null;
+
+  const fontSize = Math.max(6.5, 9.5 / Math.pow(scale, 0.28)) / scale;
+
+  return (
+    <G pointerEvents="none">
+      {barangays.map((bgy, idx) => (
+        <Path
+          key={`bgy-poly-${idx}`}
+          d={bgy.d}
+          fill="rgba(255, 255, 255, 0.08)"
+          stroke="#4b6355"
+          strokeWidth={1.2 / scale}
+          strokeDasharray={`${3 / scale},${3 / scale}`}
+        />
+      ))}
+      {barangays.map((bgy, idx) => {
+        if (!bgy.name || isNaN(bgy.centroid.x) || isNaN(bgy.centroid.y)) return null;
+        return (
+          <SvgText
+            key={`bgy-lbl-${idx}`}
+            x={bgy.centroid.x}
+            y={bgy.centroid.y}
+            fill="#ffffff"
+            fontSize={fontSize}
+            fontWeight="700"
+            textAnchor="middle"
+            opacity={0.92}
+          >
+            {bgy.name}
+          </SvgText>
+        );
+      })}
+    </G>
+  );
+});
+
 // ============================================================================
 // MEMOIZED LAYER 1: 53 Cebu LGUs (Consistent Harmonious Colors)
 // ============================================================================
@@ -119,9 +239,9 @@ const MunicipalitiesLayer = memo(function MunicipalitiesLayer({
 
         const matchesTier = isLguInHierarchyTier(item.rawName, hierarchyTier);
 
-        // Consistent base styling across all 53 Cebu LGUs (clean & harmonious)
-        const baseFill = '#dceae8';
-        const baseStroke = '#b2d4cf';
+        // Consistent base styling across all 53 Cebu LGUs (matching Website's sage & dark-teal)
+        const baseFill = '#8cae90';
+        const baseStroke = '#2c3d36';
         const strokeMultiplier = 1.0;
 
         // Selected state takes absolute visual priority (keeps exact '#1f3d3c' for tests)
@@ -131,7 +251,7 @@ const MunicipalitiesLayer = memo(function MunicipalitiesLayer({
           ? strokeWidthBase * 2.8
           : strokeWidthBase * strokeMultiplier;
 
-        const opacity = matchesTier || isSelected ? 1.0 : 0.42;
+        const opacity = matchesTier || isSelected ? (normSelected ? (isSelected ? 1.0 : 0.45) : 1.0) : 0.42;
 
         return (
           <Path
@@ -227,6 +347,13 @@ interface PinsLayerProps {
   scale: number;
   selectedPinId?: string | null;
   onSelectPin?: (pin: Pin) => void;
+  onSelectCluster?: (cluster: {
+    count: number;
+    pins: Pin[];
+    x: number;
+    y: number;
+    totalBudget?: number;
+  }) => void;
   onClusterPress?: () => void;
 }
 
@@ -236,135 +363,145 @@ const PinsLayer = memo(function PinsLayer({
   scale,
   selectedPinId,
   onSelectPin,
+  onSelectCluster,
   onClusterPress,
 }: PinsLayerProps) {
-  const screenClusterR = Math.max(9.0, 14.0 / Math.pow(scale, 0.28));
-  const clusterR = screenClusterR / scale;
-  const clusterFontSize = Math.max(7.0, 11 / Math.pow(scale, 0.28)) / scale;
+  if (!clusters || clusters.length === 0) return null;
 
   return (
     <G>
       {clusters.map((item) => {
-        if (item.isCluster) {
-          return (
-            <G
-              key={item.id}
-              testID={`map-cluster-${item.count}`}
-              onPress={() => {
-                haptics.triggerSelection();
-                onClusterPress?.();
-              }}
-            >
+        const isCluster = item.isCluster;
+        const firstPin = item.pins[0];
+        const isSelected = selectedPinId === firstPin?.id;
+
+        // Core colors matching website (.pin--emerald, .pin--amber, .pin--rose, .pin--cyan)
+        let coreColor = '#f59e0b'; // Amber for ongoing
+        let glowColor = 'rgba(245, 158, 11, 0.45)';
+
+        if (item.isHotspot || item.primaryStatus === 'Hotspot') {
+          coreColor = '#ef4444';
+          glowColor = 'rgba(239, 68, 68, 0.45)';
+        } else if (item.primaryStatus === 'Delayed') {
+          coreColor = '#ef4444';
+          glowColor = 'rgba(239, 68, 68, 0.45)';
+        } else if (item.primaryStatus === 'Completed') {
+          coreColor = '#10b981';
+          glowColor = 'rgba(16, 185, 129, 0.45)';
+        }
+
+        // Diamond size: screen size scaled to SVG units
+        const screenSize = isCluster
+          ? item.count >= 100
+            ? 19.0
+            : item.count >= 10
+            ? 16.5
+            : 14.0
+          : isSelected
+          ? 13.0
+          : 11.0;
+        const size = screenSize / scale;
+        const halfSize = size / 2;
+        const rx = 2.2 / scale;
+        const strokeW = (isSelected ? 1.8 : 1.2) / scale;
+        const hitR = Math.max(22 / scale, halfSize * 2.8);
+
+        // Cluster count font size and vertical alignment inside diamond
+        const countFontSize = (item.count >= 100 ? 7.0 : item.count >= 10 ? 8.0 : 8.8) / scale;
+        const countYOffset = (item.count >= 100 ? 2.4 : item.count >= 10 ? 2.8 : 3.0) / scale;
+
+        return (
+          <G
+            key={item.id}
+            testID={isCluster ? `map-cluster-${item.count}` : `map-pin-${firstPin.id}`}
+            onPress={() => {
+              haptics.triggerSelection();
+              if (isCluster) {
+                if (onSelectCluster) {
+                  onSelectCluster({
+                    count: item.count,
+                    pins: item.pins,
+                    x: item.x,
+                    y: item.y,
+                    totalBudget: item.totalBudget,
+                  });
+                } else {
+                  onClusterPress?.();
+                }
+              } else {
+                onSelectPin?.(pins.find((p) => p.id === firstPin.id) || firstPin);
+              }
+            }}
+          >
+            {/* Generous touch target */}
+            <Circle cx={item.x} cy={item.y} r={hitR} fill="transparent" />
+
+            {/* Radar ring for hotspots */}
+            {item.isHotspot && (
               <Circle
                 cx={item.x}
                 cy={item.y}
-                r={clusterR}
-                fill="#1f3d3c"
-                stroke="#ffffff"
-                strokeWidth={1.5 / scale}
+                r={halfSize * 1.414 + 6 / scale}
+                fill="none"
+                stroke="#ef4444"
+                strokeWidth={strokeW}
+                strokeDasharray={`${2.5 / scale},${2.5 / scale}`}
+                opacity={0.85}
               />
+            )}
+
+            {/* Selection golden highlight ring */}
+            {isSelected && (
+              <Circle
+                cx={item.x}
+                cy={item.y}
+                r={halfSize * 1.414 + 4 / scale}
+                fill="none"
+                stroke="#facc15"
+                strokeWidth={2 / scale}
+                opacity={0.95}
+              />
+            )}
+
+            {/* Soft glow underneath diamond */}
+            <Rect
+              x={item.x - (halfSize + 2.5 / scale)}
+              y={item.y - (halfSize + 2.5 / scale)}
+              width={size + 5 / scale}
+              height={size + 5 / scale}
+              rx={rx + 1.2 / scale}
+              ry={rx + 1.2 / scale}
+              fill={glowColor}
+              opacity={0.45}
+              transform={`rotate(45, ${item.x}, ${item.y})`}
+            />
+
+            {/* Diamond (Rotated Square with rounded corners and crisp white border) */}
+            <Rect
+              x={item.x - halfSize}
+              y={item.y - halfSize}
+              width={size}
+              height={size}
+              rx={rx}
+              ry={rx}
+              fill={coreColor}
+              stroke="#ffffff"
+              strokeWidth={strokeW}
+              transform={`rotate(45, ${item.x}, ${item.y})`}
+            />
+
+            {/* Cluster count label inside diamond */}
+            {isCluster && (
               <SvgText
                 x={item.x}
-                y={item.y + 3.5 / scale}
+                y={item.y + countYOffset}
                 fill="#ffffff"
-                fontSize={clusterFontSize}
-                fontWeight="bold"
+                fontSize={countFontSize}
+                fontWeight="900"
                 textAnchor="middle"
               >
                 {item.count}
               </SvgText>
-            </G>
-          );
-        }
-
-        const pin = item.pins[0];
-        const isSelected = selectedPinId === pin.id;
-        const reportCount = typeof pin.report_count === 'number' ? pin.report_count : 0;
-        const isHotspot =
-          reportCount > 0 || pin.tone === 'hotspot' || Boolean(pin.is_hotspot);
-
-        const isCompleted = pin.status === 'Completed';
-        const isDelayed = pin.status === 'Delayed' || pin.tone === 'warning';
-
-        const coreColor = isHotspot
-          ? '#ef4444'
-          : isDelayed
-          ? '#f59e0b'
-          : isCompleted
-          ? '#0284c7'
-          : '#10b981';
-
-        const glowColor = isHotspot
-          ? 'rgba(239, 68, 68, 0.45)'
-          : isDelayed
-          ? 'rgba(245, 158, 11, 0.45)'
-          : isCompleted
-          ? 'rgba(2, 132, 199, 0.45)'
-          : 'rgba(16, 185, 129, 0.45)';
-
-        const screenCoreR = Math.max(2.0, (isSelected ? 6.5 : 4.8) / Math.pow(scale, 0.38));
-        const screenGlowR = Math.max(3.8, (isSelected ? 12.0 : 8.5) / Math.pow(scale, 0.38));
-        const screenRadarR = Math.max(5.5, (isSelected ? 16.0 : 12.0) / Math.pow(scale, 0.38));
-
-        const coreR = screenCoreR / scale;
-        const glowR = screenGlowR / scale;
-        const radarR = screenRadarR / scale;
-        const hitR = Math.max(18 / scale, coreR * 2.5);
-        const strokeW = (isSelected ? 1.5 : 1.0) / scale;
-
-        return (
-          <G
-            key={pin.id}
-            testID={`map-pin-${pin.id}`}
-            onPress={() => {
-              haptics.triggerSelection();
-              onSelectPin?.(pins.find((p) => p.id === pin.id) || pin);
-            }}
-          >
-            <Circle cx={pin.x} cy={pin.y} r={hitR} fill="transparent" />
-
-            {isHotspot && (
-              <>
-                <Circle
-                  cx={pin.x}
-                  cy={pin.y}
-                  r={radarR}
-                  fill="none"
-                  stroke="#ef4444"
-                  strokeWidth={strokeW}
-                  strokeDasharray={`${2 / scale},${2 / scale}`}
-                  opacity={0.85}
-                />
-                <Circle
-                  cx={pin.x}
-                  cy={pin.y}
-                  r={glowR}
-                  fill="rgba(239, 68, 68, 0.25)"
-                />
-              </>
-            )}
-
-            <Circle cx={pin.x} cy={pin.y} r={glowR} fill={glowColor} />
-
-            <Circle
-              cx={pin.x}
-              cy={pin.y}
-              r={coreR}
-              fill={coreColor}
-              stroke="#ffffff"
-              strokeWidth={strokeW}
-            />
-
-            {isSelected && (
-              <Circle
-                cx={pin.x}
-                cy={pin.y}
-                r={radarR + 2.5 / scale}
-                fill="none"
-                stroke="#ffffff"
-                strokeWidth={strokeW}
-                opacity={0.9}
-              />
             )}
           </G>
         );
@@ -382,8 +519,10 @@ function CebuVectorMapImpl(
     selectedPinId,
     hierarchyTier = 'ALL',
     pins = [],
+    showAllPins = false,
     onSelectMunicipality,
     onSelectPin,
+    onSelectCluster,
     width: propWidth,
     height: propHeight,
     testID = 'cebu-vector-map',
@@ -619,9 +758,41 @@ function CebuVectorMapImpl(
     });
   }, [bounds, width, height]);
 
+  const normSelected = useMemo(
+    () => (selectedMunicipality ? normalizeLguName(selectedMunicipality).toLowerCase() : null),
+    [selectedMunicipality],
+  );
+
+  const selectedLguItem = useMemo(() => {
+    if (!normSelected) return null;
+    return pathsData.find(
+      (item) =>
+        item.normalizedName.toLowerCase() === normSelected ||
+        item.rawName.toLowerCase() === normSelected,
+    ) || null;
+  }, [pathsData, normSelected]);
+
+  // Compute barangays when an LGU is selected
+  const selectedBarangays = useMemo(() => {
+    if (!selectedMunicipality) return [];
+    return computeBarangaysForLgu(selectedMunicipality, bounds, width, height);
+  }, [selectedMunicipality, bounds, width, height]);
+
+  // When an area is selected, ONLY show projects in that specified area.
+  // If no area is selected, zero dots are rendered (matching the website).
+  const scopedPins = useMemo(() => {
+    if (!normSelected && !showAllPins) return [];
+    if (!normSelected && showAllPins) return pins;
+    return pins.filter(
+      (p) => normalizeLguName(p.lgu).toLowerCase() === normSelected,
+    );
+  }, [pins, normSelected, showAllPins]);
+
+  // Map pins to SVG space and guarantee dots are contained ONLY in that area
   const basePins = useMemo(() => {
-    return pins.map((pin) => {
-      const coords = geoToSvgCoordinates(
+    if (scopedPins.length === 0) return [];
+    return scopedPins.map((pin) => {
+      let coords = geoToSvgCoordinates(
         pin.lng,
         pin.lat,
         bounds,
@@ -629,17 +800,39 @@ function CebuVectorMapImpl(
         height,
         16,
       );
+
+      // If an area is selected, verify and clamp dot inside the LGU polygon rings
+      if (selectedLguItem && selectedLguItem.rings && selectedLguItem.rings.length > 0) {
+        let inside = false;
+        for (const ring of selectedLguItem.rings) {
+          if (isPointInRing(coords.x, coords.y, ring)) {
+            inside = true;
+            break;
+          }
+        }
+        // If coordinate fell slightly outside, snap it towards the LGU centroid
+        if (!inside) {
+          coords = {
+            x: coords.x * 0.35 + selectedLguItem.centroid.x * 0.65,
+            y: coords.y * 0.35 + selectedLguItem.centroid.y * 0.65,
+          };
+        }
+      }
+
       return {
         ...pin,
         x: coords.x,
         y: coords.y,
       };
     });
-  }, [pins, bounds, width, height]);
+  }, [scopedPins, bounds, width, height, selectedLguItem]);
 
   const steppedClusterScale = Math.round(scale * 4) / 4;
   const displayPinClusters = useMemo(() => {
-    return clusterPins(basePins, steppedClusterScale, 24);
+    if (basePins.length === 0) return [];
+    // Dynamic proximity clustering: nearby projects merge into 1 diamond dot
+    // with count at lower zoom. As user zooms in, dots naturally split!
+    return clusterPins(basePins, steppedClusterScale, 26);
   }, [basePins, steppedClusterScale]);
 
   const activeSelectedPin = useMemo(() => {
@@ -977,6 +1170,11 @@ function CebuVectorMapImpl(
                 onSelectMunicipality={onSelectMunicipality}
               />
 
+              {/* Internal Barangay Subdivisions when an LGU is selected */}
+              {selectedBarangays.length > 0 && (
+                <BarangaysLayer barangays={selectedBarangays} scale={scale} />
+              )}
+
               {/* Place Navigation Labels (Clean & Uniform) */}
               <PlaceLabelsLayer
                 pathsData={pathsData}
@@ -991,6 +1189,7 @@ function CebuVectorMapImpl(
                 scale={scale}
                 selectedPinId={selectedPinId}
                 onSelectPin={onSelectPin}
+                onSelectCluster={onSelectCluster}
                 onClusterPress={() => {
                   const nextScale = Math.min(
                     MAX_SCALE,
@@ -1128,7 +1327,7 @@ export default CebuVectorMap;
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#cbe3df',
+    backgroundColor: '#2f4f4e',
     overflow: 'hidden',
     position: 'relative',
     justifyContent: 'center',
@@ -1222,13 +1421,13 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   statusCompleted: {
-    backgroundColor: 'rgba(2, 132, 199, 0.25)',
+    backgroundColor: 'rgba(16, 185, 129, 0.25)',
   },
   statusDelayed: {
-    backgroundColor: 'rgba(245, 158, 11, 0.25)',
+    backgroundColor: 'rgba(239, 68, 68, 0.25)',
   },
   statusOngoing: {
-    backgroundColor: 'rgba(16, 185, 129, 0.25)',
+    backgroundColor: 'rgba(245, 158, 11, 0.25)',
   },
   calloutStatusText: {
     fontSize: 10,

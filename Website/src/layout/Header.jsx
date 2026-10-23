@@ -22,7 +22,7 @@ function Wordmark() {
 // GitHub Releases page for the repo — used as the fallback when no direct APK
 // URL is configured (never 404s; lands users on the release with the asset).
 const GITHUB_RELEASES_URL =
-  'https://github.com/ThirdTempest/ProjectTRACK/releases/latest'
+  'https://github.com/kaids77/ProjectTRACK/releases/latest'
 
 // "Get an App" APK download. When VITE_APK_URL points at a .apk it downloads
 // directly; otherwise it redirects to the GitHub Releases page.

@@ -86,9 +86,9 @@ export default function LocationIntelSheet({
       case 'Completed':
         return { bg: '#ecfdf5', text: '#065f46', border: '#a7f3d0' };
       case 'Delayed':
-        return { bg: '#fef3c7', text: '#92400e', border: '#fde68a' };
+        return { bg: '#fef2f2', text: '#b91c1c', border: '#fecaca' };
       default:
-        return { bg: '#e6fffa', text: '#0d9488', border: '#99f6e4' };
+        return { bg: '#fffbeb', text: '#b45309', border: '#fde68a' };
     }
   };
 

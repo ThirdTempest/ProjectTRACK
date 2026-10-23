@@ -974,7 +974,7 @@ const styles = StyleSheet.create({
   teaserMapFrame: {
     borderRadius: 10,
     overflow: 'hidden',
-    backgroundColor: '#cbe3df',
+    backgroundColor: '#2f4f4e',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',

@@ -92,7 +92,7 @@ export default function AboutMapModal({ visible, onClose }: AboutMapModalProps) 
                 <View style={styles.legendItem}>
                   <View style={[styles.diamondPin, styles.diamondTeal]} />
                   <Text style={styles.legendText}>
-                    <Text style={styles.bold}>Teal diamond</Text> — Ongoing project
+                    <Text style={styles.bold}>Amber diamond</Text> — Ongoing project
                     (shows completion %)
                   </Text>
                 </View>
@@ -100,7 +100,7 @@ export default function AboutMapModal({ visible, onClose }: AboutMapModalProps) 
                 <View style={styles.legendItem}>
                   <View style={[styles.diamondPin, styles.diamondBlue]} />
                   <Text style={styles.legendText}>
-                    <Text style={styles.bold}>Blue diamond</Text> — Completed project
+                    <Text style={styles.bold}>Green diamond</Text> — Completed project
                     (100%)
                   </Text>
                 </View>
@@ -108,8 +108,8 @@ export default function AboutMapModal({ visible, onClose }: AboutMapModalProps) 
                 <View style={styles.legendItem}>
                   <View style={[styles.diamondPin, styles.diamondRed]} />
                   <Text style={styles.legendText}>
-                    <Text style={[styles.bold, { color: '#ef4444' }]}>Red Hotspot dot</Text> —
-                    Citizen anomaly hotspot (site flagged with multiple field reports)
+                    <Text style={[styles.bold, { color: '#ef4444' }]}>Red diamond</Text> — Delayed project / anomaly hotspot
+
                   </Text>
                 </View>
 
@@ -264,10 +264,10 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '45deg' }],
   },
   diamondTeal: {
-    backgroundColor: '#0d9488',
+    backgroundColor: '#f59e0b',
   },
   diamondBlue: {
-    backgroundColor: '#0284c7',
+    backgroundColor: '#10b981',
   },
   diamondRed: {
     backgroundColor: '#ef4444',

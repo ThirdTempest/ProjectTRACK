@@ -7,6 +7,8 @@ import {
   useWindowDimensions,
   Platform,
   ActivityIndicator,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapHeader from '../components/MapHeader';
@@ -30,8 +32,8 @@ import {
 import {
   normalizeLguName,
   normalizeCoordinates,
-  isLguInHierarchyTier,
   computeBoundingBox,
+  formatCurrencyPHP,
   RegionPreset,
 } from '../../core/geoUtils';
 import cebuDataRaw from '../../assets/cebuMunicipalities.json';
@@ -76,6 +78,13 @@ export default function MapScreen({
   const [mapPins, setMapPins] = useState<Pin[]>([]);
   const [activeProjects, setActiveProjects] = useState<ProjectDetail[]>([]);
   const [isLoadingPins, setIsLoadingPins] = useState(true);
+  const [clusterModalData, setClusterModalData] = useState<{
+    count: number;
+    pins: Pin[];
+    x: number;
+    y: number;
+    totalBudget?: number;
+  } | null>(null);
 
   useEffect(() => {
     if (initialLgu) {
@@ -137,11 +146,7 @@ export default function MapScreen({
 
   // Fetch live projects by location whenever selectedLgu or searchQuery changes
   useEffect(() => {
-    const loc = selectedLgu || searchQuery.trim();
-    if (!loc) {
-      setActiveProjects([]);
-      return;
-    }
+    const loc = selectedLgu || searchQuery.trim() || 'Cebu';
     let isMounted = true;
 
     api
@@ -205,7 +210,29 @@ export default function MapScreen({
 
   // Dynamic LGU-specific projects for LocationIntelSheet
   const currentLguProjects = useMemo(() => {
-    if (!selectedLgu) return activeProjects;
+    if (!selectedLgu) {
+      if (activeProjects.length > 0) return activeProjects;
+      if (mapPins.length > 0) {
+        return mapPins.map((p) => ({
+          id: p.id,
+          title: p.name,
+          contractor: p.contractor || 'Contractor on Record',
+          budget: typeof p.budget === 'number' ? p.budget : 28500000,
+          status: (p.status === 'Completed'
+            ? 'Completed'
+            : p.tone === 'warning' || p.status === 'Delayed'
+            ? 'Delayed'
+            : 'Ongoing') as ProjectStatus,
+          lgu: p.lgu,
+          scope: p.description,
+          report_count: p.report_count || 0,
+          is_hotspot: p.is_hotspot || false,
+          latitude: typeof p.lat === 'number' ? p.lat : undefined,
+          longitude: typeof p.lng === 'number' ? p.lng : undefined,
+        }));
+      }
+      return [];
+    }
     const targetNorm = normalizeLguName(selectedLgu).toLowerCase();
 
     const filteredActive = activeProjects.filter(
@@ -240,15 +267,14 @@ export default function MapScreen({
   }, [selectedLgu, activeProjects, mapPins]);
 
   const filteredPins = useMemo(() => {
-    let result = mapPins;
-    if (selectedLgu) {
-      const norm = normalizeLguName(selectedLgu).toLowerCase();
-      result = result.filter(
-        (p) => normalizeLguName(p.lgu).toLowerCase() === norm,
-      );
-    } else if (hierarchyTier !== 'ALL') {
-      result = result.filter((p) => isLguInHierarchyTier(p.lgu, hierarchyTier));
+    // Matching website: zero dots when no area is selected
+    if (!selectedLgu) {
+      return [];
     }
+    const norm = normalizeLguName(selectedLgu).toLowerCase();
+    let result = mapPins.filter(
+      (p) => normalizeLguName(p.lgu).toLowerCase() === norm,
+    );
 
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
@@ -479,19 +505,6 @@ export default function MapScreen({
         onSelectFilter={setActiveFilter}
       />
 
-      {/* Floating Refresh Button */}
-      <TouchableOpacity
-        style={styles.floatingRefreshBtn}
-        onPress={handleRefreshMap}
-        activeOpacity={0.8}
-        testID="map-refresh-btn"
-        accessibilityLabel="Refresh map data"
-      >
-        <Text style={styles.floatingRefreshText}>
-          {isRefreshingMap ? '⏳ Syncing…' : '↻ Refresh'}
-        </Text>
-      </TouchableOpacity>
-
       {/* Full Viewport Interactive Map (Hardware Vector on Mobile, SVG Vector on Web) */}
       <View style={styles.mapContainer}>
         {/* Floating Region Focus Presets (Metro Cebu, North, South, Islands) */}
@@ -499,6 +512,19 @@ export default function MapScreen({
           onSelectPreset={handleSelectRegionPreset}
           activePresetId={activeRegionPresetId}
         />
+
+        {/* Floating Refresh Button inside map viewport */}
+        <TouchableOpacity
+          style={styles.floatingRefreshBtn}
+          onPress={handleRefreshMap}
+          activeOpacity={0.8}
+          testID="map-refresh-btn"
+          accessibilityLabel="Refresh map data"
+        >
+          <Text style={styles.floatingRefreshText}>
+            {isRefreshingMap ? '⏳ Syncing…' : '↻ Refresh'}
+          </Text>
+        </TouchableOpacity>
 
         <UnifiedCebuMap
           ref={mapRef}
@@ -509,6 +535,7 @@ export default function MapScreen({
           pins={filteredPins}
           onSelectMunicipality={handleSelectMunicipality}
           onSelectPin={handleSelectPin}
+          onSelectCluster={(cluster) => setClusterModalData(cluster)}
           width={mapWidth}
           height={mapHeight}
         />
@@ -536,43 +563,54 @@ export default function MapScreen({
         )}
       </View>
 
-      {/* Floating Civic Assistant Button */}
-      <TouchableOpacity
-        style={styles.floatingChatBtn}
-        onPress={() => setIsChatBotOpen(true)}
-        activeOpacity={0.8}
-        testID="open-chat-bot-btn"
-        accessibilityLabel="Open Civic AI Assistant"
-      >
-        <Text style={styles.floatingChatIcon}>💬</Text>
-        <Text style={styles.floatingChatText}>Ask AI</Text>
-      </TouchableOpacity>
-
-      {/* Floating "About Map" quick badge */}
-      <TouchableOpacity
-        style={styles.floatingAboutBtn}
-        onPress={() => setIsAboutModalOpen(true)}
-        activeOpacity={0.8}
-        testID="open-about-map-btn"
-        accessibilityLabel="About the Map"
-      >
-        <Text style={styles.floatingAboutText}>ℹ️ Info</Text>
-      </TouchableOpacity>
-
-      {/* Floating "Show Details" Pill when sheet is hidden */}
+      {/* Floating Bottom Controls (Only visible when location sheet is hidden) */}
       {sheetState === 'hidden' && (
-        <TouchableOpacity
-          style={styles.floatingShowSheetPill}
-          onPress={() => setSheetState('expanded')}
-          activeOpacity={0.85}
-          testID="sheet-show-pill-btn"
-          accessibilityLabel="Show location details sheet"
-        >
-          <Text style={styles.floatingShowSheetIcon}>📊</Text>
-          <Text style={styles.floatingShowSheetText}>
-            {selectedLgu ? `Details: ${selectedLgu}` : 'Show Details'}
-          </Text>
-        </TouchableOpacity>
+        <>
+          {/* Floating Civic Assistant Button */}
+          <TouchableOpacity
+            style={styles.floatingChatBtn}
+            onPress={() => setIsChatBotOpen(true)}
+            activeOpacity={0.8}
+            testID="open-chat-bot-btn"
+            accessibilityLabel="Open Civic AI Assistant"
+          >
+            <Text style={styles.floatingChatIcon}>💬</Text>
+            <Text style={styles.floatingChatText}>Ask AI</Text>
+          </TouchableOpacity>
+
+          {/* Floating "About Map" quick badge */}
+          <TouchableOpacity
+            style={styles.floatingAboutBtn}
+            onPress={() => setIsAboutModalOpen(true)}
+            activeOpacity={0.8}
+            testID="open-about-map-btn"
+            accessibilityLabel="About the Map"
+          >
+            <Text style={styles.floatingAboutText}>ℹ️ Info</Text>
+          </TouchableOpacity>
+
+          {/* Floating "Show Details" Pill when sheet is hidden */}
+          <TouchableOpacity
+            style={styles.floatingShowSheetPill}
+            onPress={() => {
+              setSheetState('expanded');
+              if (activeProjects.length === 0) {
+                const loc = selectedLgu || 'Cebu';
+                api.fetchProjectsByLocation(loc, 100).then((projs) => {
+                  if (projs && projs.length > 0) setActiveProjects(projs);
+                });
+              }
+            }}
+            activeOpacity={0.85}
+            testID="sheet-show-pill-btn"
+            accessibilityLabel="Show location details sheet"
+          >
+            <Text style={styles.floatingShowSheetIcon}>📊</Text>
+            <Text style={styles.floatingShowSheetText}>
+              {selectedLgu ? `Details: ${selectedLgu}` : 'Show Details'}
+            </Text>
+          </TouchableOpacity>
+        </>
       )}
 
       {/* Bottom Location Intel Sheet (Expanded, Minimized, or Hidden) */}
@@ -657,6 +695,105 @@ export default function MapScreen({
           }
         }}
       />
+
+      {/* Multi-Project Cluster Modal (Reveals all projects in that specific area) */}
+      <Modal
+        visible={clusterModalData !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setClusterModalData(null)}
+      >
+        <View style={styles.clusterModalBackdrop}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setClusterModalData(null)}
+          />
+          <View style={styles.clusterModalContainer}>
+            <View style={styles.clusterModalHeader}>
+              <View style={styles.clusterModalHeaderLeft}>
+                <Text style={styles.clusterModalTitle}>
+                  📍 {clusterModalData?.count ?? 0} Projects at this Site
+                </Text>
+                <Text style={styles.clusterModalSubtitle}>
+                  {selectedLgu ? `${selectedLgu} · ` : ''}Projects located close to each other
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.clusterModalCloseBtn}
+                onPress={() => setClusterModalData(null)}
+                accessibilityLabel="Close"
+              >
+                <Text style={styles.clusterModalCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Action to Zoom In and Separate */}
+            <TouchableOpacity
+              style={styles.clusterZoomInBtn}
+              onPress={() => {
+                if (clusterModalData && clusterModalData.pins.length > 0) {
+                  const first = clusterModalData.pins[0];
+                  mapRef.current?.animateToCoordinates(first.lat, first.lng, 6.5);
+                }
+                setClusterModalData(null);
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.clusterZoomInText}>🔍 Zoom In to Reveal Individual Dots</Text>
+            </TouchableOpacity>
+
+            {/* Scrollable list of projects */}
+            <ScrollView
+              style={styles.clusterModalScroll}
+              showsVerticalScrollIndicator={true}
+            >
+              {clusterModalData?.pins.map((pin) => (
+                <TouchableOpacity
+                  key={pin.id}
+                  style={styles.clusterProjectCard}
+                  onPress={() => {
+                    setClusterModalData(null);
+                    handleSelectPin(pin);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.clusterCardHeader}>
+                    <Text style={styles.clusterCardId}>{pin.id}</Text>
+                    <View
+                      style={[
+                        styles.clusterStatusBadge,
+                        pin.status === 'Completed'
+                          ? styles.clusterStatusCompleted
+                          : pin.tone === 'warning' || pin.status === 'Delayed'
+                          ? styles.clusterStatusDelayed
+                          : styles.clusterStatusOngoing,
+                      ]}
+                    >
+                      <Text style={styles.clusterStatusText}>
+                        {pin.status || (pin.tone === 'warning' ? 'Delayed' : 'Ongoing')}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={styles.clusterCardTitle} numberOfLines={2}>
+                    {pin.name}
+                  </Text>
+                  <View style={styles.clusterCardFooter}>
+                    <Text style={styles.clusterCardContractor} numberOfLines={1}>
+                      🏗️ {pin.contractor || 'Contractor on Record'}
+                    </Text>
+                    <Text style={styles.clusterCardBudget}>
+                      {typeof pin.budget === 'number'
+                        ? formatCurrencyPHP(pin.budget)
+                        : 'Budget on Record'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -664,7 +801,7 @@ export default function MapScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#cbe3df',
+    backgroundColor: '#2f4f4e',
     position: 'relative',
     height: '100%',
     width: '100%',
@@ -674,7 +811,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#cbe3df',
+    backgroundColor: '#2f4f4e',
   },
   mapOverlay: {
     position: 'absolute',
@@ -711,15 +848,15 @@ const styles = StyleSheet.create({
   },
   floatingRefreshBtn: {
     position: 'absolute',
-    top: 120,
-    right: 16,
+    top: 12,
+    right: 12,
     backgroundColor: 'rgba(31, 61, 60, 0.95)',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 11,
-    paddingHorizontal: 15,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     borderRadius: 20,
-    minHeight: 44,
+    minHeight: 38,
     borderWidth: 1,
     borderColor: 'rgba(52, 211, 153, 0.5)',
     shadowColor: '#000',
@@ -727,7 +864,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 6,
-    zIndex: 90,
+    zIndex: 25,
   },
   floatingRefreshText: {
     fontSize: 12,
@@ -821,5 +958,133 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
     color: '#ffffff',
+  },
+  clusterModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    justifyContent: 'flex-end',
+  },
+  clusterModalContainer: {
+    backgroundColor: '#1f3d3c',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 32,
+    maxHeight: '75%',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+  },
+  clusterModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 14,
+  },
+  clusterModalHeaderLeft: {
+    flex: 1,
+    marginRight: 10,
+  },
+  clusterModalTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  clusterModalSubtitle: {
+    fontSize: 12,
+    color: '#94a3b8',
+    marginTop: 2,
+  },
+  clusterModalCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clusterModalCloseText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  clusterZoomInBtn: {
+    backgroundColor: 'rgba(52, 211, 153, 0.15)',
+    borderWidth: 1,
+    borderColor: '#34d399',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  clusterZoomInText: {
+    color: '#34d399',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  clusterModalScroll: {
+    maxHeight: 380,
+  },
+  clusterProjectCard: {
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  clusterCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  clusterCardId: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#34d399',
+  },
+  clusterStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  clusterStatusOngoing: {
+    backgroundColor: 'rgba(245, 158, 11, 0.25)',
+  },
+  clusterStatusCompleted: {
+    backgroundColor: 'rgba(16, 185, 129, 0.25)',
+  },
+  clusterStatusDelayed: {
+    backgroundColor: 'rgba(239, 68, 68, 0.25)',
+  },
+  clusterStatusText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#ffffff',
+  },
+  clusterCardTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#ffffff',
+    marginBottom: 8,
+    lineHeight: 18,
+  },
+  clusterCardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  clusterCardContractor: {
+    fontSize: 11,
+    color: '#94a3b8',
+    flex: 1,
+    marginRight: 8,
+  },
+  clusterCardBudget: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#fbbf24',
   },
 });

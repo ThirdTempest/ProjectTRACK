@@ -72,6 +72,7 @@ describe('CebuVectorMap Component', () => {
     const { getAllByTestId } = render(
       <CebuVectorMap
         pins={pins}
+        selectedMunicipality="Bogo City"
         onSelectMunicipality={mockOnSelectMunicipality}
         onSelectPin={mockOnSelectPin}
       />,
@@ -85,6 +86,7 @@ describe('CebuVectorMap Component', () => {
     const { getByTestId } = render(
       <CebuVectorMap
         pins={pins}
+        selectedMunicipality="Bogo City"
         onSelectMunicipality={mockOnSelectMunicipality}
         onSelectPin={mockOnSelectPin}
       />,
@@ -143,15 +145,15 @@ describe('CebuVectorMap Component', () => {
 
     // HUC (Cebu City)
     const cebuCityPath = getByTestId('muni-path-Cebu City');
-    expect(strokeOf(cebuCityPath)).toBe('#b2d4cf');
+    expect(strokeOf(cebuCityPath)).toBe('#2c3d36');
 
     // Component City (Bogo City)
     const bogoPath = getByTestId('muni-path-City of Bogo');
-    expect(strokeOf(bogoPath)).toBe('#b2d4cf');
+    expect(strokeOf(bogoPath)).toBe('#2c3d36');
 
     // Municipality (Argao)
     const argaoPath = getByTestId('muni-path-Argao');
-    expect(strokeOf(argaoPath)).toBe('#b2d4cf');
+    expect(strokeOf(argaoPath)).toBe('#2c3d36');
   });
 
   test('subdues non-matching municipalities when hierarchy tier is CITIES', () => {
@@ -259,6 +261,7 @@ describe('CebuVectorMap Component', () => {
     const { getByTestId, getByText } = render(
       <CebuVectorMap
         pins={pins}
+        selectedMunicipality="Bogo City"
         selectedPinId={firstPin.id}
         onSelectMunicipality={mockOnSelectMunicipality}
         onSelectPin={mockOnSelectPin}

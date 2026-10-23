@@ -8,7 +8,15 @@ export interface UnifiedCebuMapProps {
   hierarchyTier?: HierarchyFilterTier;
   pins?: Pin[];
   onSelectMunicipality?: (name: string) => void;
+  showAllPins?: boolean;
   onSelectPin?: (pin: Pin) => void;
+  onSelectCluster?: (cluster: {
+    count: number;
+    pins: Pin[];
+    x: number;
+    y: number;
+    totalBudget?: number;
+  }) => void;
   width?: number;
   height?: number;
   testID?: string;

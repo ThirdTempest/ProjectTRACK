@@ -13,7 +13,7 @@ Powered by **Neo4j Aura**, **Groq LPU Engine (`qwen/qwen3.8-27b`)**, and **Multi
 * **Prompt-Injection Hardening**: User messages and client-supplied history are normalized (NFKC, zero-width/control-char stripping, whitespace de-flooding, length cap) and screened for common injection phrasings (instruction-override, persona/developer-mode jailbreaks, prompt exfiltration, chat-template delimiters). Instruction-override content planted in history is also rejected.
 * **Multi-Tier Fallback Resilience**:
   * **Groq LPU**: Primary high-speed cloud generation at ~500+ tok/s.
-  * **Local Ollama Fallback**: Lightweight `qwen2.5:0.5b` (~398 MB) offline fallback via `python main.py --setup-local-ai`.
+  * **Local Ollama Fallback**: Lightweight `qwen2.5:0.5b` (~398 MB) offline fallback via `python cli.py --setup-local-ai`.
   * **Deterministic Graph Synthesizer**: Sub-5ms zero-token factual synthesizer ensuring zero failures on rate limits (HTTP 429).
 * **Instant Cypher Mode**: Retrieve project cards, analytics, and municipality summaries in `<10ms` without waiting for LLM generation.
 * **Real-Time SSE Token Streaming**: Server-Sent Events (`/api/chat/stream`) for streaming token-by-token responses to web chat interfaces.
@@ -31,7 +31,6 @@ Powered by **Neo4j Aura**, **Groq LPU Engine (`qwen/qwen3.8-27b`)**, and **Multi
 backend/
 ├── app.py                  # FastAPI app factory, CORS, routers & lifespan
 ├── config.py                # Typed settings via Pydantic Settings & .env
-# (run.py now lives at backend/run.py -> start with `python run.py`)
 ├── setup_local_ai.py        # Permission-gated 1-command installer for local Ollama & qwen2.5:0.5b
 ├── requirements.txt         # FastAPI backend dependencies
 ├── README.md                # Documentation & API reference
@@ -254,7 +253,7 @@ Supabase Dashboard → Authentication → URL Configuration → **Redirect URLs*
 otherwise Supabase silently redirects back to the project Site URL:
 
     http://localhost:5173/**            # local dev (Vite)
-    https://projecttrack.pages.dev/**   # production
+    https://your-frontend-domain.com/** # production
 
 Registration e-mails are sent by Supabase, so configure a custom SMTP provider
 under Authentication → Email: the built-in mailer only delivers to the
