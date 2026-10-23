@@ -43,7 +43,7 @@ The latest stable APK is attached to the GitHub Release:
 | **Verification Badging** | Each submitted report surfaces its verdict — status, distance from site, forensics result, and reporter reputation — using the same schema as the web client. |
 | **Offline-First Architecture** | An in-memory outbox queues audits captured offline; `api.syncPendingAudits()` POSTs them to the backend when connectivity returns, marking each synced on success. |
 | **Conversational Field Assistant** | On-device access to the GraphRAG chat via SSE streaming for contextual project queries. |
-| **Interactive Cebu Map** | SVG vector map of all 53 Cebu LGUs with project markers and contractor overlays. Zoom and pan are driven by the SVG `viewBox` so boundaries, labels, and pins re-rasterize crisply at every zoom level without blur. |
+| **Dual-Tier Vector GIS & Barangay Mapping** | SVG vector cartography and cross-platform MapLibre GIS covering all 53 Cebu LGUs with live project markers and contractor overlays. Seamlessly transitions from municipal boundaries to granular barangay-level vector polygons (`src/assets/cebuBarangays.json`) at high zoom (~Zoom 12+), featuring touch selection, boundary highlights, and zoom-aware label rendering. |
 | **Live Backend Data** | All project, pin, contractor, summary, and chat data is fetched live from the backend. No bundled mock dataset. Loading, empty, and error (retry) states are shown when the backend is unreachable. |
 | **Brand Logo with Dark-Mode Support** | The ProjectTRACK logo is bundled as the app icon, splash screen, and in-app header mark. The `Logo` component swaps to a white variant on dark surfaces so it remains visible in both light and dark contexts. |
 | **Native Session Persistence** | Session tokens are stored in the OS keystore via `expo-secure-store` and sent as `Authorization: Bearer` headers on every authenticated request. A React Native APK cannot rely on browser HTTP-only cookies, so token-based auth is used on native while the web client continues to use the cookie. |
@@ -52,7 +52,7 @@ The latest stable APK is attached to the GitHub Release:
 | **Client-Side Input Sanitization** | `sanitizer.ts` strips Cypher/SQL injection vectors, script tags, control codes, and null bytes before user inputs reach the network. |
 | **Spatial Coordinate Normalization** | `geoUtils.ts` enforces geographic bounding constraints across Cebu Province (mainland, Bantayan, Camotes) and rejects cross-strait coordinate anomalies (Bohol and Negros). |
 | **Hardware-Accelerated MapLibre GIS** | Interactive vector GIS layer featuring selected municipality boundary fills, golden pin selection rings, red anomaly hotspot beacons, and cold-start retry resilience. |
-| **Build Alignment via Build Properties** | Configured via `expo-build-properties` to lock Kotlin 1.9.25, ensuring seamless Gradle compilation with Jetpack Compose Compiler 1.5.15 and Expo SDK 52. |
+| **Build Alignment via Build Properties** | Configured via `expo-build-properties` to lock Kotlin 1.9.25 (Android `versionCode: 9`), ensuring seamless Gradle compilation with Jetpack Compose Compiler 1.5.15 and Expo SDK 52. |
 
 ---
 
@@ -159,7 +159,7 @@ eas build --platform android --profile preview
 
 The build targets `https://projecttrack-28nb.onrender.com/api` (set in `eas.json`). When the build finishes, EAS prints a download URL. Attach the APK to the GitHub Release so the website's "Get an App" button can download it directly.
 
-**Latest build:** EAS build `5eb9d9cf-cd6d-40d0-895a-3f60e11e1677`, version 1.0.0 (versionCode 4).
+**Latest build:** EAS build `484fb092-bcff-46e2-9fd7-5487d948bfca`, version 1.0.0 (versionCode 9).
 
 ---
 
@@ -181,7 +181,7 @@ mobile/
 │   │   ├── components/      # Reusable UI (BottomTabBar, MapHeader, Logo, CebuVectorMap, etc.)
 │   │   ├── screens/         # HomeScreen, MapScreen, ContractorRankingScreen, Auth
 │   │   └── theme.ts         # Shared sizing tokens (MIN_TOUCH = 44)
-│   └── assets/              # GeoJSON boundaries, logo variants
+│   └── assets/              # GeoJSON boundaries (cebuMunicipalities.json, cebuBarangays.json), logo variants
 ├── __tests__/               # Jest test suite (29 suites, 199 tests)
 ├── app.json                 # Expo SDK 52 configuration
 ├── eas.json                 # EAS Build profiles (preview APK, production AAB)

@@ -42,12 +42,12 @@ Every fiscal year, billions of Philippine Pesos are allocated for Department of 
 
 ### Mobile Field Auditor (`mobile` — React Native with Expo)
 * **Geofenced On-Site Photo Capture**: Uses React Native and Expo (`expo-location`, `expo-camera`) to confirm the device is within ≤150m of the project's DPWH coordinates before the live camera shutter unlocks (gallery uploads disabled for ground-truth integrity).
-* **Dual Vector & MapLibre GIS Mapping**: High-performance SVG vector cartography and hardware-accelerated MapLibre GIS with selected LGU boundary highlights, golden ring selection accents, red anomaly hotspots, and cold-start retry resilience.
-* **Spatial Coordinate Normalization**: Bounding-box sanitization for Cebu Province with automatic rejection of off-island coordinates across the Bohol and Tañon straits.
+* **Dual-Tier Vector GIS & Barangay Cartography**: High-performance SVG vector cartography and hardware-accelerated MapLibre GIS. Dynamically renders all 53 municipal boundaries at low-to-mid zoom and activates detailed barangay-level vector polygons (`cebuBarangays.json`) at high zoom (~Zoom 12+), complete with boundary strokes, selection highlights, golden ring pin accents, red anomaly hotspots, and cold-start retry resilience.
+* **Spatial Coordinate Normalization & Polygon Clipping**: Bounding-box sanitization and geometry clipping for Cebu Province (mainland, Bantayan, Camotes) with automatic rejection of off-island coordinates across the Bohol and Tañon straits.
 * **Server-Verified Submission & Badging**: Captured audits are submitted to `/api/reports`, re-validated server-side (geofence + image forensics), and the returned verdict — status, distance, forensics result, reputation — is shown on-device.
 * **Native Session Persistence**: OS keystore storage via `expo-secure-store` sending Bearer headers on all authenticated calls, with deep-link OAuth callback support (`projecttrack://auth/callback`).
 * **Offline-First Background Sync**: Audits captured offline are queued in a local outbox and synced to the backend when connectivity returns.
-* **Automated Standalone APK Builds**: EAS cloud build workflow with Kotlin 1.9.25 / Jetpack Compose 1.5.15 alignment generating standalone Android binaries.
+* **Automated Standalone APK Builds**: EAS cloud build workflow aligned with Android build version 9 (Kotlin 1.9.25 / Jetpack Compose Compiler 1.5.15) generating standalone Android binaries.
 
 ### Core Backend and Services (`backend`)
 * **Personnel and Entity Graph Mapping**: Models relationships between contractors, authorized managing officers, district engineers, and procurement awards into a traversable graph.
