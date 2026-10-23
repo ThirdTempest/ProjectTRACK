@@ -18,7 +18,7 @@
     },
     "android": {
       "package": "com.projecttrack.mobile",
-      "versionCode": 4,
+      "versionCode": 9,
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/logo.png",
         "backgroundColor": "#1f3d3c"

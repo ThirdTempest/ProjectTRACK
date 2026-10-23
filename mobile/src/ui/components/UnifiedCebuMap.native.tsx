@@ -1,27 +1,22 @@
 import React, { forwardRef } from 'react';
-import { NativeModules } from 'react-native';
-import MapLibreCebuMap from './MapLibreCebuMap';
 import CebuVectorMap from './CebuVectorMap';
 import { Pin, HierarchyFilterTier } from '../../core/types';
-
-// Only route to MapLibre when its native module is actually linked — the JS
-// package loads even without it and MapView crashes at render time.
-let MapLibreGL: any = null;
-try {
-  MapLibreGL = NativeModules?.MLRNModule
-    ? require('@maplibre/maplibre-react-native')
-    : null;
-} catch {
-  MapLibreGL = null;
-}
 
 export interface UnifiedCebuMapProps {
   selectedMunicipality?: string | null;
   selectedPinId?: string | null;
   hierarchyTier?: HierarchyFilterTier;
   pins?: Pin[];
+  showAllPins?: boolean;
   onSelectMunicipality?: (name: string) => void;
   onSelectPin?: (pin: Pin) => void;
+  onSelectCluster?: (cluster: {
+    count: number;
+    pins: Pin[];
+    x: number;
+    y: number;
+    totalBudget?: number;
+  }) => void;
   width?: number;
   height?: number;
   testID?: string;
@@ -32,11 +27,14 @@ export interface UnifiedCebuMapRef {
   recenter: () => void;
 }
 
+/**
+ * ProjectTRACK Unified Map (Native APK & Development)
+ *
+ * Uses the offline, hardware-accelerated SVG vector engine for 100% offline
+ * reliability, zero tile server latency, and exact visual parity with the website.
+ */
 const UnifiedCebuMap = forwardRef<UnifiedCebuMapRef, UnifiedCebuMapProps>((props, ref) => {
-  if (!MapLibreGL) {
-    return <CebuVectorMap ref={ref as any} {...props} />;
-  }
-  return <MapLibreCebuMap ref={ref as any} {...props} />;
+  return <CebuVectorMap ref={ref as any} {...props} />;
 });
 
 export default UnifiedCebuMap;

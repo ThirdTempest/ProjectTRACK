@@ -23,9 +23,9 @@ interface FilterItem {
 
 const FILTERS: FilterItem[] = [
   { id: 'ALL', label: 'All Projects' },
-  { id: 'ONGOING', label: 'Ongoing', dotColor: '#0d9488' },
-  { id: 'COMPLETED', label: 'Completed', dotColor: '#0284c7' },
-  { id: 'DELAYED', label: 'Delayed', dotColor: '#f59e0b' },
+  { id: 'ONGOING', label: 'Ongoing', dotColor: '#f59e0b' },
+  { id: 'COMPLETED', label: 'Completed', dotColor: '#10b981' },
+  { id: 'DELAYED', label: 'Delayed', dotColor: '#ef4444' },
   { id: 'HIGH_BUDGET', label: '>₱50M Budget', icon: '💰' },
 ];
 
@@ -50,7 +50,11 @@ export default function MapFilterBar({
           return (
             <TouchableOpacity
               key={item.id}
-              style={[styles.pill, isActive && styles.pillActive]}
+              style={[
+                styles.pill,
+                isActive && styles.pillActive,
+                isActive && item.dotColor ? { borderColor: item.dotColor } : null,
+              ]}
               onPress={() => handlePress(item.id)}
               activeOpacity={0.7}
               testID={`filter-btn-${item.id.toLowerCase()}`}
@@ -111,7 +115,8 @@ const styles = StyleSheet.create({
   dot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: 1.5,
+    transform: [{ rotate: '45deg' }],
   },
   icon: {
     fontSize: 12,

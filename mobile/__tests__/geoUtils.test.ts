@@ -74,7 +74,7 @@ describe('geoUtils suite', () => {
   });
 
   describe('clusterPins', () => {
-    test('does not cluster when scale > 1.25', () => {
+    test('separates pins when zoomed in (high scale)', () => {
       const pins = [
         { id: 'p1', x: 100, y: 100 },
         { id: 'p2', x: 105, y: 105 },
@@ -83,7 +83,7 @@ describe('geoUtils suite', () => {
         { id: 'p5', x: 400, y: 400 },
       ];
 
-      const clusters = clusterPins(pins, 1.5, 28);
+      const clusters = clusterPins(pins, 5.0, 28);
       expect(clusters.length).toBe(5);
       expect(clusters.every((c) => !c.isCluster)).toBe(true);
     });

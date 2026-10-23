@@ -151,27 +151,31 @@ export interface ClusteredPinItem {
   x: number;
   y: number;
   pins: any[];
+  totalBudget?: number;
+  primaryStatus?: string;
+  isHotspot?: boolean;
 }
 
 /**
- * Clusters rendered SVG pins based on pixel proximity when map zoom scale is low.
+ * Zoom-aware proximity clustering for SVG map markers.
+ *
+ * Merges pins whose on-screen separation (distance * scale) is within pixelThreshold.
+ * As the user zooms in, scale increases, causing the SVG merge distance to shrink
+ * so overlapping pins naturally separate into individual project markers.
  */
 export function clusterPins(
   renderedPins: any[],
   scale: number,
-  distanceThreshold: number = 28,
+  screenPixelThreshold: number = 24,
 ): ClusteredPinItem[] {
-  if (scale > 1.25 || renderedPins.length <= 4) {
-    return renderedPins.map((p) => ({
-      id: p.id,
-      isCluster: false,
-      count: 1,
-      pinIds: [p.id],
-      x: p.x,
-      y: p.y,
-      pins: [p],
-    }));
+  if (!Array.isArray(renderedPins) || renderedPins.length === 0) {
+    return [];
   }
+
+  // Convert screen pixel threshold to SVG coordinate threshold based on current zoom scale
+  const safeScale = Math.max(0.5, scale);
+  const thresholdSvg = screenPixelThreshold / safeScale;
+  const thresholdSq = thresholdSvg * thresholdSvg;
 
   const clusters: ClusteredPinItem[] = [];
   const visited = new Set<string>();
@@ -180,7 +184,7 @@ export function clusterPins(
     const current = renderedPins[i];
     if (visited.has(current.id)) continue;
 
-    const clusterGroup = [current];
+    const group = [current];
     visited.add(current.id);
 
     for (let j = i + 1; j < renderedPins.length; j++) {
@@ -189,40 +193,52 @@ export function clusterPins(
 
       const dx = current.x - other.x;
       const dy = current.y - other.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
+      const distSq = dx * dx + dy * dy;
 
-      if (dist <= distanceThreshold) {
-        clusterGroup.push(other);
+      if (distSq <= thresholdSq) {
+        group.push(other);
         visited.add(other.id);
       }
     }
 
-    if (clusterGroup.length > 1) {
-      const avgX =
-        clusterGroup.reduce((sum, p) => sum + p.x, 0) / clusterGroup.length;
-      const avgY =
-        clusterGroup.reduce((sum, p) => sum + p.y, 0) / clusterGroup.length;
+    const isCluster = group.length > 1;
+    const avgX = group.reduce((sum, p) => sum + p.x, 0) / group.length;
+    const avgY = group.reduce((sum, p) => sum + p.y, 0) / group.length;
 
-      clusters.push({
-        id: `cluster-${clusterGroup.map((p) => p.id).join('-')}`,
-        isCluster: true,
-        count: clusterGroup.length,
-        pinIds: clusterGroup.map((p) => p.id),
-        x: avgX,
-        y: avgY,
-        pins: clusterGroup,
-      });
-    } else {
-      clusters.push({
-        id: current.id,
-        isCluster: false,
-        count: 1,
-        pinIds: [current.id],
-        x: current.x,
-        y: current.y,
-        pins: [current],
-      });
+    let totalBudget = 0;
+    let hasDelayed = false;
+    let hasCompleted = false;
+    let hasHotspot = false;
+
+    for (const p of group) {
+      if (typeof p.budget === 'number') totalBudget += p.budget;
+      if (p.tone === 'warning' || p.status === 'Delayed') hasDelayed = true;
+      if (p.status === 'Completed') hasCompleted = true;
+      if (p.is_hotspot || (typeof p.report_count === 'number' && p.report_count > 0)) {
+        hasHotspot = true;
+      }
     }
+
+    const primaryStatus = hasHotspot
+      ? 'Hotspot'
+      : hasDelayed
+      ? 'Delayed'
+      : hasCompleted
+      ? 'Completed'
+      : 'Ongoing';
+
+    clusters.push({
+      id: isCluster ? `cluster-${group.map((p) => p.id).join('-')}` : current.id,
+      isCluster,
+      count: group.length,
+      pinIds: group.map((p) => p.id),
+      x: isCluster ? avgX : current.x,
+      y: isCluster ? avgY : current.y,
+      pins: group,
+      totalBudget,
+      primaryStatus,
+      isHotspot: hasHotspot,
+    });
   }
 
   return clusters;

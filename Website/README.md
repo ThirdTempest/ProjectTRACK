@@ -23,7 +23,8 @@ The web presentation tier of ProjectTrack provides an interactive, low-latency g
 * **Project Status Markers**: Teal diamonds for ongoing projects (with completion %), blue diamonds for completed.
 * **Proximity Marker Clustering**: Projects that overlap on screen are clustered by a zoom-aware pixel distance (`src/features/map/cluster.js`), not just by identical coordinates. Clusters collapse to one pin with a count and a nearby-projects list, and separate again as you zoom in.
 * **Light / Dark Theme**: A header sun/moon toggle switches the whole interface between light and dark, persisted to `localStorage` and defaulting to the visitor's system preference (`src/services/theme.js`). The brand wordmark renders as a tri-color "ProjectTrack" (logo-toned "Project" + green "Track").
-* **"Get an App" Header Download**: Centered navigation control providing turnkey access to the standalone Android APK (via `VITE_APK_URL`) with seamless fallback to GitHub Releases.
+* **"Get an App" Header Download**: Centered navigation control providing turnkey access to the standalone Android APK (via `VITE_APK_URL`) with seamless fallback to GitHub Releases, displayed prominently on desktop and inside the mobile navigation drawer.
+* **Interactive Audio Easter Egg**: Lightweight audio entertainment easter egg triggered via multi-click user interaction, featuring graceful audio element management and zero performance overhead.
 * **Two-Stage Resilient Geolocation**: Browser GPS engine with a rapid high-accuracy pass followed by a coarse cache-tolerant Wi-Fi/IP fallback, accompanied by actionable failure reason codes and in-place retry controls.
 * **Location Intel Panel**: Per-LGU project list with statuses, budgets, and paginated full-details modal.
 * **Contractor Rankings**: `/contractors` page ranking contractors by awarded budget.
